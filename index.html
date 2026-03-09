@@ -530,7 +530,8 @@
   /* ── Tick ── */
   function tick() {
     var now = new Date();
-    cards.hh.set(pad(now.getHours()));
+    var h = now.getHours() % 12 || 12;
+    cards.hh.set(pad(h));
     cards.mm.set(pad(now.getMinutes()));
     cards.ss.set(pad(now.getSeconds()));
     document.getElementById('date-display').textContent =
