@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=320, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Clock</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0a0a;
+      --card-top: #222222;
+      --card-bot: #161616;
+      --fg: #f0ece4;
+      --muted: #666;
+      --accent: #c8b99a;
+      --dim: #2a2a2a;
+      --divider: #0a0a0a;
+
+      /* iPhone 4S = 320x480 CSS px. Status bar ~20px, so usable = 320x460 */
+      --card-w: 76px;
+      --card-h: 90px;
+      --font-sz: 52px;
+    }
+
+    html,
+    body {
+      width: 320px;
+      height: 480px;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+
+    /* ── SWIPE WRAP ── */
+    #swipe-wrap {
+      display: -webkit-box;
+      display: flex;
+      width: 640px;
+      /* 2 × 320 */
+      height: 480px;
+      -webkit-transition: -webkit-transform 0.42s cubic-bezier(0.77, 0, 0.175, 1);
+      transition: transform 0.42s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+
+    #swipe-wrap.show-cal {
+      -webkit-transform: translateX(-320px);
+      transform: translateX(-320px);
+    }
+
+    .page {
+      width: 320px;
+      height: 480px;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-orient: vertical;
+      flex-direction: column;
+      -webkit-box-align: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════
+       FLIP CARD
+    ══════════════════════════════ */
+    .flip-unit {
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-orient: vertical;
+      flex-direction: column;
+      -webkit-box-align: center;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .flip-card {
+      position: relative;
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 10px;
+      -webkit-perspective: 300px;
+      perspective: 300px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Static background halves */
+    .card-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      overflow: hidden;
+      background: var(--card-top);
+      border-radius: 10px 10px 0 0;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: end;
+      align-items: flex-end;
+      -webkit-box-pack: center;
+      justify-content: center;
+    }
+
+    .card-bot {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 50%;
+      overflow: hidden;
+      background: var(--card-bot);
+      border-radius: 0 0 10px 10px;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: start;
+      align-items: flex-start;
+      -webkit-box-pack: center;
+      justify-content: center;
+    }
+
+    .card-top span {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: var(--font-sz);
+      color: var(--fg);
+      line-height: 1;
+      display: block;
+      -webkit-transform: translateY(50%);
+      transform: translateY(50%);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .card-bot span {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: var(--font-sz);
+      color: var(--fg);
+      line-height: 1;
+      display: block;
+      -webkit-transform: translateY(-50%);
+      transform: translateY(-50%);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* Sheen */
+    .card-top::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.06), transparent);
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), transparent);
+      pointer-events: none;
+    }
+
+    .card-bot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: -webkit-linear-gradient(bottom, rgba(0, 0, 0, 0.4), transparent);
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+      pointer-events: none;
+    }
+
+    /* Divider line */
+    .card-divider {
+      position: absolute;
+      top: calc(50% - 1px);
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--divider);
+      z-index: 20;
+    }
+
+    /* Animated flap */
+    .flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      overflow: hidden;
+      background: var(--card-top);
+      border-radius: 10px 10px 0 0;
+      -webkit-transform-origin: bottom center;
+      transform-origin: bottom center;
+      -webkit-transform-style: preserve-3d;
+      transform-style: preserve-3d;
+      z-index: 10;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: end;
+      align-items: flex-end;
+      -webkit-box-pack: center;
+      justify-content: center;
+    }
+
+    .flap span {
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: var(--font-sz);
+      color: var(--fg);
+      line-height: 1;
+      display: block;
+      -webkit-transform: translateY(50%);
+      transform: translateY(50%);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .flap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.06), transparent);
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), transparent);
+      pointer-events: none;
+    }
+
+    .flap.animate {
+      -webkit-animation: flapDown 0.32s ease-in forwards;
+      animation: flapDown 0.32s ease-in forwards;
+    }
+
+    @-webkit-keyframes flapDown {
+      0% {
+        -webkit-transform: rotateX(0deg);
+      }
+
+      100% {
+        -webkit-transform: rotateX(-90deg);
+      }
+    }
+
+    @keyframes flapDown {
+      0% {
+        transform: rotateX(0deg);
+      }
+
+      100% {
+        transform: rotateX(-90deg);
+      }
+    }
+
+    .flip-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ══════════════════════════════
+       CLOCK LAYOUT
+    ══════════════════════════════ */
+    #clock-row {
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: center;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .colon-sep {
+      font-family: 'DM Mono', monospace;
+      font-size: 38px;
+      font-weight: 300;
+      color: var(--accent);
+      margin-bottom: 18px;
+      opacity: 0.8;
+      -webkit-animation: blink 1s step-start infinite;
+      animation: blink 1s step-start infinite;
+    }
+
+    @-webkit-keyframes blink {
+
+      0%,
+      100% {
+        opacity: 0.8
+      }
+
+      50% {
+        opacity: 0.1
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 0.8
+      }
+
+      50% {
+        opacity: 0.1
+      }
+    }
+
+    #date-row {
+      margin-top: 22px;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-orient: vertical;
+      flex-direction: column;
+      -webkit-box-align: center;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #date-display {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: 15px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    #day-display {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    #progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0.3;
+      width: 0%;
+      -webkit-transition: width 0.95s linear;
+      transition: width 0.95s linear;
+    }
+
+    /* hints */
+    .swipe-hint,
+    .back-hint {
+      position: absolute;
+      bottom: 18px;
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: center;
+      align-items: center;
+      gap: 5px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .swipe-hint::after {
+      content: '→';
+      -webkit-animation: nudge-r 2.5s ease-in-out infinite;
+      animation: nudge-r 2.5s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    .back-hint::before {
+      content: '←';
+      -webkit-animation: nudge-l 2.5s ease-in-out infinite;
+      animation: nudge-l 2.5s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    @-webkit-keyframes nudge-r {
+
+      0%,
+      100% {
+        -webkit-transform: translateX(0)
+      }
+
+      50% {
+        -webkit-transform: translateX(4px)
+      }
+    }
+
+    @keyframes nudge-r {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      50% {
+        transform: translateX(4px)
+      }
+    }
+
+    @-webkit-keyframes nudge-l {
+
+      0%,
+      100% {
+        -webkit-transform: translateX(0)
+      }
+
+      50% {
+        -webkit-transform: translateX(-4px)
+      }
+    }
+
+    @keyframes nudge-l {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      50% {
+        transform: translateX(-4px)
+      }
+    }
+
+    /* ══════════════════════════════
+       CALENDAR
+    ══════════════════════════════ */
+    #cal-page {
+      -webkit-box-pack: start;
+      justify-content: flex-start;
+      padding: 36px 14px 0;
+    }
+
+    #cal-header {
+      width: 100%;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: center;
+      align-items: center;
+      -webkit-box-pack: justify;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    #cal-month-label {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: 22px;
+      color: var(--fg);
+    }
+
+    .cal-nav {
+      background: none;
+      border: 1px solid var(--dim);
+      color: var(--muted);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      justify-content: center;
+      -webkit-appearance: none;
+    }
+
+    .cal-nav:active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .cal-weekdays {
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      width: 100%;
+      margin-bottom: 6px;
+    }
+
+    .cal-wd {
+      -webkit-box-flex: 1;
+      flex: 1;
+      text-align: center;
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding: 3px 0;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* Use flex rows instead of grid for old Safari */
+    #cal-days {
+      width: 100%;
+    }
+
+    .cal-row {
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      width: 100%;
+    }
+
+    .cal-day {
+      -webkit-box-flex: 1;
+      flex: 1;
+      aspect-ratio: 1;
+      height: 38px;
+      display: -webkit-box;
+      display: flex;
+      -webkit-box-align: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--muted);
+      border-radius: 50%;
+      font-family: 'DM Mono', monospace;
+      font-weight: 300;
+    }
+
+    .cal-day.other-month {
+      opacity: 0.22;
+    }
+
+    .cal-day.current-month {
+      color: var(--fg);
+      opacity: 0.75;
+    }
+
+    .cal-day.today {
+      background: var(--accent);
+      color: var(--bg);
+      opacity: 1;
+      font-weight: 500;
+    }
+
+    body {
+      -webkit-animation: fadeIn 0.6s ease;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @-webkit-keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="swipe-wrap">
+
+    <!-- ── CLOCK PAGE ── -->
+    <div class="page" id="clock-page">
+      <div id="progress-bar"></div>
+
+      <div id="clock-row">
+        <div class="flip-unit">
+          <div class="flip-card">
+            <div class="card-top"><span id="top-hh">00</span></div>
+            <div class="card-bot"><span id="bot-hh">00</span></div>
+            <div class="card-divider"></div>
+            <div class="flap" id="flap-hh"><span id="flap-hh-val">00</span></div>
+          </div>
+          <div class="flip-label">hour</div>
+        </div>
+
+        <div class="colon-sep">:</div>
+
+        <div class="flip-unit">
+          <div class="flip-card">
+            <div class="card-top"><span id="top-mm">00</span></div>
+            <div class="card-bot"><span id="bot-mm">00</span></div>
+            <div class="card-divider"></div>
+            <div class="flap" id="flap-mm"><span id="flap-mm-val">00</span></div>
+          </div>
+          <div class="flip-label">min</div>
+        </div>
+
+        <div class="colon-sep">:</div>
+
+        <div class="flip-unit">
+          <div class="flip-card">
+            <div class="card-top"><span id="top-ss">00</span></div>
+            <div class="card-bot"><span id="bot-ss">00</span></div>
+            <div class="card-divider"></div>
+            <div class="flap" id="flap-ss"><span id="flap-ss-val">00</span></div>
+          </div>
+          <div class="flip-label">sec</div>
+        </div>
+      </div>
+
+      <div id="date-row">
+        <div id="date-display"></div>
+        <div id="day-display"></div>
+      </div>
+
+      <div class="swipe-hint">calendar</div>
+    </div>
+
+    <!-- ── CALENDAR PAGE ── -->
+    <div class="page" id="cal-page">
+      <div id="cal-header">
+        <button class="cal-nav" id="prev-month">&#8249;</button>
+        <div id="cal-month-label"></div>
+        <button class="cal-nav" id="next-month">&#8250;</button>
+      </div>
+      <div style="width:100%">
+        <div class="cal-weekdays">
+          <div class="cal-wd">Su</div>
+          <div class="cal-wd">Mo</div>
+          <div class="cal-wd">Tu</div>
+          <div class="cal-wd">We</div>
+          <div class="cal-wd">Th</div>
+          <div class="cal-wd">Fr</div>
+          <div class="cal-wd">Sa</div>
+        </div>
+        <div id="cal-days"></div>
+      </div>
+      <div class="back-hint">clock</div>
+    </div>
+
+  </div>
+
+  <script>
+    function pad(n) { return ('0' + n).slice(-2); }
+
+    var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday',
+      'Thursday', 'Friday', 'Saturday'];
+
+    /* ── Flip Card ── */
+    function Card(id) {
+      this.topEl = document.getElementById('top-' + id);
+      this.botEl = document.getElementById('bot-' + id);
+      this.flapEl = document.getElementById('flap-' + id);
+      this.flapVal = document.getElementById('flap-' + id + '-val');
+      this.current = null;
+    }
+    Card.prototype.set = function (val) {
+      if (this.current === val) return;
+      var prev = this.current !== null ? this.current : val;
+      this.current = val;
+      this.botEl.textContent = val;
+      this.flapVal.textContent = prev;
+      this.flapEl.className = 'flap';
+      var el = this.flapEl;
+      var topEl = this.topEl;
+      var flapVal = this.flapVal;
+      // force reflow
+      void el.offsetWidth;
+      el.className = 'flap animate';
+      setTimeout(function () {
+        topEl.textContent = val;
+        flapVal.textContent = val;
+        el.className = 'flap';
+      }, 340);
+    };
+
+    var cards = {
+      hh: new Card('hh'),
+      mm: new Card('mm'),
+      ss: new Card('ss')
+    };
+
+    /* ── Tick ── */
+    function tick() {
+      var now = new Date();
+      cards.hh.set(pad(now.getHours()));
+      cards.mm.set(pad(now.getMinutes()));
+      cards.ss.set(pad(now.getSeconds()));
+      document.getElementById('date-display').textContent =
+        MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+      document.getElementById('day-display').textContent = DAYS[now.getDay()];
+      document.getElementById('progress-bar').style.width =
+        ((now.getSeconds() / 59) * 100) + '%';
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    /* ── Calendar ── */
+    var calYear, calMonth;
+    function initCal() {
+      var n = new Date();
+      calYear = n.getFullYear();
+      calMonth = n.getMonth();
+      renderCal();
+    }
+    function renderCal() {
+      var now = new Date();
+      document.getElementById('cal-month-label').textContent =
+        MONTHS[calMonth] + ' ' + calYear;
+      var firstDay = new Date(calYear, calMonth, 1).getDay();
+      var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      var daysInPrev = new Date(calYear, calMonth, 0).getDate();
+
+      // Build flat array of day cells
+      var cells = [];
+      for (var i = firstDay - 1; i >= 0; i--) {
+        cells.push({ label: daysInPrev - i, cls: 'cal-day other-month' });
+      }
+      for (var i = 1; i <= daysInMonth; i++) {
+        var isToday = i === now.getDate() &&
+          calMonth === now.getMonth() && calYear === now.getFullYear();
+        cells.push({ label: i, cls: 'cal-day current-month' + (isToday ? ' today' : '') });
+      }
+      var rem = cells.length % 7;
+      if (rem) {
+        for (var i = 1; i <= 7 - rem; i++) {
+          cells.push({ label: i, cls: 'cal-day other-month' });
+        }
+      }
+
+      // Render as flex rows of 7
+      var container = document.getElementById('cal-days');
+      container.innerHTML = '';
+      for (var r = 0; r < cells.length; r += 7) {
+        var row = document.createElement('div');
+        row.className = 'cal-row';
+        for (var c = r; c < r + 7 && c < cells.length; c++) {
+          var cell = document.createElement('div');
+          cell.className = cells[c].cls;
+          cell.textContent = cells[c].label;
+          row.appendChild(cell);
+        }
+        container.appendChild(row);
+      }
+    }
+
+    document.getElementById('prev-month').onclick = function () {
+      if (--calMonth < 0) { calMonth = 11; calYear--; } renderCal();
+    };
+    document.getElementById('next-month').onclick = function () {
+      if (++calMonth > 11) { calMonth = 0; calYear++; } renderCal();
+    };
+    initCal();
+
+    /* ── Swipe ── */
+    var wrap = document.getElementById('swipe-wrap');
+    var sx = 0, sy = 0, onCal = false;
+
+    document.addEventListener('touchstart', function (e) {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+    }, false);
+
+    document.addEventListener('touchend', function (e) {
+      var dx = e.changedTouches[0].clientX - sx;
+      var dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dx) < Math.abs(dy) * 1.2 || Math.abs(dx) < 35) return;
+      if (!onCal && dx < 0) {
+        onCal = true;
+        wrap.className = 'show-cal';
+      } else if (onCal && dx > 0) {
+        onCal = false;
+        wrap.className = '';
+      }
+    }, false);
+  </script>
+</body>
+
+</html>
