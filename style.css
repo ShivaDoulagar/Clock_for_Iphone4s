@@ -1,10 +1,52 @@
-.screen {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
+:root {
+  --panel-height: 214px;
 }
 
-.clock,
+.t1 {
+  align-items: stretch;
+}
+
+.t1-left,
+.t1-right {
+  height: var(--panel-height);
+}
+
+.t1-left {
+  justify-content: center;
+}
+
+.t1-right {
+  padding: 12px 10px;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.t1-divider {
+  height: var(--panel-height);
+  align-self: center;
+}
+
+.t2 {
+  align-items: center;
+}
+
+.clock-wrap,
 .cal-panel {
-	flex-grow: 1;
+  height: var(--panel-height);
+}
+
+.clock-wrap {
+  width: var(--panel-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.analog-svg {
+  width: var(--panel-height);
+  height: var(--panel-height);
+}
+
+.cal-panel {
+  justify-content: center;
 }
