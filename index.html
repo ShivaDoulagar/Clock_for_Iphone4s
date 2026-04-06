@@ -2,431 +2,513 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StandBy Clock</title>
-<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Rounded:wght@700&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>StandBy</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ─── RESET ─── */
+* { margin:0; padding:0; -webkit-box-sizing:border-box; box-sizing:border-box; }
+html, body {
+  width:320px; height:480px;
+  overflow:hidden;
+  background:#000;
+  font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: none;
+  /* touch-action removed — was blocking iOS lock/home buttons */
+}
 
-  body {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    background: #000;
-    font-family: 'Nunito', sans-serif;
-    cursor: default;
-    user-select: none;
-  }
+/* ─── SLIDER ─── */
+.slider {
+  width:320px;
+  height:960px; /* 2 screens */
+  -webkit-transition: -webkit-transform 0.55s cubic-bezier(0.77,0,0.175,1);
+  transition:         -webkit-transform 0.55s cubic-bezier(0.77,0,0.175,1);
+  -webkit-transform: translateY(0);
+  transform: translateY(0);
+  will-change: transform;
+}
+.slider.down {
+  -webkit-transform: translateY(-480px);
+  transform: translateY(-480px);
+}
 
-  /* ── SLIDE CONTAINER ── */
-  .slider {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 200%;
-    transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
-  }
-  .slider.at-bottom { transform: translateY(-50%); }
+/* ─── SCREEN ─── */
+.screen {
+  width:320px;
+  height:480px;
+  position:relative;
+  overflow:hidden;
+}
 
-  /* ── SHARED SCREEN ── */
-  .screen {
-    width: 100%;
-    height: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-  }
+/* ════════════════════════════════════
+   THEME 1 — DIGITAL  (top)
+════════════════════════════════════ */
+.t1 {
+  background:#000;
+  display:-webkit-box;
+  display:-webkit-flex;
+  display:flex;
+  -webkit-box-orient:vertical;
+  -webkit-flex-direction:column;
+  flex-direction:column;
+  -webkit-box-align:center;
+  -webkit-align-items:center;
+  align-items:center;
+  -webkit-box-pack:center;
+  -webkit-justify-content:center;
+  justify-content:center;
+}
 
-  /* ─────────────────────────────────────────
-     THEME 1 — Digital / Gradient (Image 1)
-  ───────────────────────────────────────── */
-  .theme-digital {
-    background: #0a0a0a;
-  }
+/* subtle amber grain vignette */
+.t1::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    -webkit-radial-gradient(center, ellipse, rgba(255,165,0,0.06) 0%, rgba(0,0,0,0.55) 100%);
+  pointer-events:none;
+}
 
-  .digital-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-  }
+.t1-ampm {
+  font-size:16px;
+  font-weight:700;
+  color:rgba(255,165,0,0.6);
+  letter-spacing:4px;
+  text-transform:uppercase;
+  margin-bottom:2px;
+  position:relative;
+}
 
-  .digital-time {
-    font-size: clamp(96px, 22vw, 200px);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -4px;
-    background: linear-gradient(135deg, #ff2d9f 0%, #bf5af2 45%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 0 40px rgba(191,90,242,0.4));
-    animation: pulse-glow 3s ease-in-out infinite alternate;
-  }
+.t1-time {
+  font-size:102px;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:-5px;
+  color:#fff;
+  position:relative;
+  /* warm amber glow via text-shadow — GPU cheap */
+  text-shadow: 0 0 30px rgba(255,160,0,0.55), 0 0 8px rgba(255,200,80,0.3);
+}
 
-  @keyframes pulse-glow {
-    from { filter: drop-shadow(0 0 30px rgba(255,45,159,0.35)); }
-    to   { filter: drop-shadow(0 0 60px rgba(191,90,242,0.6)); }
-  }
+.colon {
+  display:inline-block;
+  -webkit-animation: blink 1s step-start infinite;
+  animation: blink 1s step-start infinite;
+  opacity:1;
+}
+@-webkit-keyframes blink {
+  0%,100%{opacity:1} 50%{opacity:0}
+}
+@keyframes blink {
+  0%,100%{opacity:1} 50%{opacity:0}
+}
 
-  .digital-date {
-    font-size: clamp(14px, 2.5vw, 22px);
-    font-weight: 700;
-    color: rgba(255,255,255,0.35);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-  }
+.t1-date {
+  font-size:13px;
+  font-weight:600;
+  color:rgba(255,255,255,0.32);
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-top:10px;
+  position:relative;
+}
 
-  /* colon dot animation */
-  .colon {
-    display: inline-block;
-    animation: blink 1s step-start infinite;
-    margin: 0 2px;
-  }
-  @keyframes blink {
-    0%,100% { opacity: 1; }
-    50%      { opacity: 0; }
-  }
+.t1-secs {
+  font-size:28px;
+  font-weight:700;
+  color:rgba(255,160,0,0.45);
+  margin-top:6px;
+  letter-spacing:2px;
+  position:relative;
+}
 
-  /* ─────────────────────────────────────────
-     THEME 2 — Analog + Calendar (Image 2)
-  ───────────────────────────────────────── */
-  .theme-analog {
-    background: #000;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: clamp(16px, 3vw, 40px);
-    gap: clamp(16px, 3vw, 40px);
-  }
+/* ════════════════════════════════════
+   THEME 2 — ANALOG + CALENDAR  (bottom)
+════════════════════════════════════ */
+.t2 {
+  background:#0c0c0e;
+  display:-webkit-box;
+  display:-webkit-flex;
+  display:flex;
+  -webkit-box-orient:horizontal;
+  -webkit-flex-direction:row;
+  flex-direction:row;
+  -webkit-box-align:center;
+  -webkit-align-items:center;
+  align-items:center;
+  padding:0 10px;
+  gap:10px;
+}
 
-  /* ── CLOCK FACE ── */
-  .clock-face {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+/* ── Analog face ── */
+.clock-wrap {
+  -webkit-flex-shrink:0;
+  flex-shrink:0;
+}
 
-  svg.analog-svg {
-    width: min(42vw, 42vh, 380px);
-    height: min(42vw, 42vh, 380px);
-    overflow: visible;
-  }
+.analog-svg {
+  width:190px;
+  height:190px;
+  display:block;
+  overflow:visible;
+}
 
-  .tick-major { stroke: rgba(255,255,255,0.55); stroke-width: 3; stroke-linecap: round; }
-  .tick-minor { stroke: rgba(255,255,255,0.22); stroke-width: 1.5; stroke-linecap: round; }
-  .hour-num   { fill: #fff; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 22px; text-anchor: middle; dominant-baseline: central; }
+.ring       { fill:none; stroke:rgba(255,255,255,0.08); stroke-width:2; }
+.tick-maj   { stroke:rgba(255,255,255,0.7); stroke-width:2.5; stroke-linecap:round; }
+.tick-min   { stroke:rgba(255,255,255,0.2); stroke-width:1;   stroke-linecap:round; }
+.h-num      { fill:rgba(255,255,255,0.75); font-size:13px; font-weight:700;
+              font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
+              text-anchor:middle; dominant-baseline:central; }
+.hand-h     { stroke:#fff; stroke-width:6;  stroke-linecap:round; }
+.hand-m     { stroke:#fff; stroke-width:4;  stroke-linecap:round; }
+.hand-s     { stroke:#ff9500; stroke-width:2; stroke-linecap:round; }
+.cdot       { fill:#ff9500; }
+.cdot-i     { fill:#0c0c0e; }
 
-  .hand-hour   { stroke: #fff; stroke-width: 9;  stroke-linecap: round; }
-  .hand-minute { stroke: #fff; stroke-width: 6;  stroke-linecap: round; }
-  .hand-second { stroke: #ff9f0a; stroke-width: 3; stroke-linecap: round; }
-  .center-dot  { fill: #ff9f0a; }
-  .center-dot-inner { fill: #1c1c1e; }
+/* ── Calendar panel ── */
+.cal-panel {
+  -webkit-flex:1;
+  flex:1;
+  display:-webkit-box;
+  display:-webkit-flex;
+  display:flex;
+  -webkit-box-orient:vertical;
+  -webkit-flex-direction:column;
+  flex-direction:column;
+  gap:6px;
+}
 
-  /* ── CALENDAR ── */
-  .calendar-wrap {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 8px;
-  }
+.cal-mon {
+  font-size:11px;
+  font-weight:700;
+  color:#ff3b30;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
 
-  .cal-month {
-    font-size: clamp(18px, 3vw, 30px);
-    font-weight: 800;
-    color: #ff3b30;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
+.cal-grid {
+  width:100%;
+}
 
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: clamp(4px, 1vw, 10px) clamp(2px, 0.5vw, 6px);
-    text-align: center;
-  }
+.cal-row {
+  display:-webkit-box;
+  display:-webkit-flex;
+  display:flex;
+  -webkit-box-pack:justify;
+  -webkit-justify-content:space-between;
+  justify-content:space-between;
+  margin-bottom:3px;
+}
 
-  .cal-hdr {
-    font-size: clamp(10px, 1.8vw, 16px);
-    font-weight: 800;
-    color: rgba(255,255,255,0.35);
-    letter-spacing: 1px;
-  }
+.cal-hdr, .cal-day {
+  width:14px;
+  text-align:center;
+  font-size:9px;
+  font-weight:700;
+}
 
-  .cal-day {
-    font-size: clamp(11px, 2vw, 18px);
-    font-weight: 700;
-    color: rgba(255,255,255,0.6);
-    width: clamp(22px, 3.5vw, 36px);
-    height: clamp(22px, 3.5vw, 36px);
-    line-height: clamp(22px, 3.5vw, 36px);
-    border-radius: 50%;
-    margin: 0 auto;
-    transition: color 0.3s;
-  }
+.cal-hdr { color:rgba(255,255,255,0.3); }
+.cal-day { color:rgba(255,255,255,0.55); line-height:14px; }
+.cal-day.today {
+  background:#ff3b30;
+  color:#fff;
+  border-radius:50%;
+  width:16px;
+  height:16px;
+  line-height:16px;
+  margin:-1px;
+  text-align:center;
+}
+.cal-day.empty { color:transparent; }
 
-  .cal-day.today {
-    background: #ff3b30;
-    color: #fff;
-  }
+/* ─── DOTS indicator ─── */
+.dots {
+  position:fixed;
+  right:6px;
+  top:50%;
+  margin-top:-14px;
+  z-index:50;
+}
+.dot {
+  width:5px; height:5px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.25);
+  margin-bottom:6px;
+  -webkit-transition: background 0.3s, -webkit-transform 0.3s;
+  transition: background 0.3s, transform 0.3s;
+}
+.dot.on { background:#fff; -webkit-transform:scale(1.4); transform:scale(1.4); }
 
-  /* ── SWIPE HINT ── */
-  .swipe-hint {
-    position: fixed;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    opacity: 0.45;
-    animation: bounce 2s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 99;
-  }
-  .swipe-hint span {
-    font-size: 11px;
-    color: #fff;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-  .swipe-hint svg { fill: #fff; }
-  @keyframes bounce {
-    0%,100% { transform: translateX(-50%) translateY(0); }
-    50%      { transform: translateX(-50%) translateY(-6px); }
-  }
-
-  /* theme indicator dots */
-  .dots {
-    position: fixed;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 99;
-  }
-  .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.25);
-    transition: background 0.4s, transform 0.4s;
-  }
-  .dot.active { background: #fff; transform: scale(1.4); }
+/* ─── SWIPE HINT ─── */
+.hint {
+  position:fixed;
+  bottom:10px;
+  left:50%;
+  margin-left:-30px;
+  width:60px;
+  text-align:center;
+  z-index:50;
+  -webkit-animation: bob 2s ease-in-out infinite;
+  animation: bob 2s ease-in-out infinite;
+  -webkit-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+}
+.hint span {
+  display:block;
+  font-size:8px;
+  font-weight:700;
+  color:rgba(255,255,255,0.4);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-top:2px;
+}
+.hint-arrow {
+  width:0; height:0;
+  border-left:6px solid transparent;
+  border-right:6px solid transparent;
+  border-top:7px solid rgba(255,255,255,0.35);
+  margin:0 auto;
+}
+@-webkit-keyframes bob {
+  0%,100%{-webkit-transform:translateY(0)} 50%{-webkit-transform:translateY(-4px)}
+}
+@keyframes bob {
+  0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)}
+}
 </style>
 </head>
 <body>
 
 <div class="slider" id="slider">
 
-  <!-- THEME 1: Digital -->
-  <div class="screen theme-digital">
-    <div class="digital-wrap">
-      <div class="digital-time" id="digitalTime">
-        <span id="dHour">9</span><span class="colon">:</span><span id="dMin">41</span>
-      </div>
-      <div class="digital-date" id="digitalDate">Monday, April 6</div>
+  <!-- ── THEME 1: Digital ── -->
+  <div class="screen t1">
+    <div class="t1-ampm" id="ampm">AM</div>
+    <div class="t1-time">
+      <span id="dH">9</span><span class="colon">:</span><span id="dM">41</span>
     </div>
+    <div class="t1-secs" id="dS">00</div>
+    <div class="t1-date" id="dDate">Mon, Apr 6</div>
   </div>
 
-  <!-- THEME 2: Analog + Calendar -->
-  <div class="screen theme-analog">
+  <!-- ── THEME 2: Analog + Calendar ── -->
+  <div class="screen t2">
 
-    <!-- Analog Clock -->
-    <div class="clock-face">
-      <svg class="analog-svg" viewBox="0 0 200 200" id="analogSvg">
-        <!-- tick marks -->
+    <div class="clock-wrap">
+      <svg class="analog-svg" id="asvg" viewBox="0 0 200 200">
+        <!-- outer ring -->
+        <circle class="ring" cx="100" cy="100" r="96"/>
+        <!-- ticks & numbers injected by JS -->
         <g id="ticks"></g>
-        <!-- hour numbers -->
-        <g id="nums"></g>
+        <g id="hnums"></g>
         <!-- hands -->
-        <line id="hourHand"   class="hand-hour"   x1="100" y1="100" x2="100" y2="55"/>
-        <line id="minuteHand" class="hand-minute" x1="100" y1="100" x2="100" y2="38"/>
-        <line id="secondHand" class="hand-second" x1="100" y1="115" x2="100" y2="35"/>
+        <line id="hH" class="hand-h" x1="100" y1="100" x2="100" y2="58"/>
+        <line id="hM" class="hand-m" x1="100" y1="100" x2="100" y2="38"/>
+        <line id="hS" class="hand-s" x1="100" y1="118" x2="100" y2="34"/>
         <!-- center -->
-        <circle class="center-dot"       cx="100" cy="100" r="6"/>
-        <circle class="center-dot-inner" cx="100" cy="100" r="3"/>
+        <circle class="cdot"   cx="100" cy="100" r="5.5"/>
+        <circle class="cdot-i" cx="100" cy="100" r="2.5"/>
       </svg>
     </div>
 
-    <!-- Calendar -->
-    <div class="calendar-wrap">
-      <div class="cal-month" id="calMonth">June</div>
+    <div class="cal-panel">
+      <div class="cal-mon" id="calMon">April</div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
 
   </div>
 </div>
 
-<!-- Swipe hint -->
-<div class="swipe-hint" id="swipeHint">
-  <svg width="16" height="10" viewBox="0 0 16 10"><path d="M8 10L0 0h16z"/></svg>
+<!-- indicators -->
+<div class="dots">
+  <div class="dot on"  id="d0"></div>
+  <div class="dot"     id="d1"></div>
+</div>
+
+<!-- swipe hint -->
+<div class="hint" id="hint">
+  <div class="hint-arrow"></div>
   <span>Swipe</span>
 </div>
 
-<!-- Theme dots -->
-<div class="dots">
-  <div class="dot active" id="dot0"></div>
-  <div class="dot"        id="dot1"></div>
-</div>
-
 <script>
-/* ── BUILD ANALOG TICKS & NUMBERS ── */
-(function buildFace() {
-  const ticks = document.getElementById('ticks');
-  const nums  = document.getElementById('nums');
-  const cx = 100, cy = 100, r = 90;
-
-  for (let i = 0; i < 60; i++) {
-    const angle = (i * 6 - 90) * Math.PI / 180;
-    const isMajor = i % 5 === 0;
-    const outer = r, inner = isMajor ? r - 12 : r - 6;
-    const x1 = cx + Math.cos(angle) * inner;
-    const y1 = cy + Math.sin(angle) * inner;
-    const x2 = cx + Math.cos(angle) * outer;
-    const y2 = cy + Math.sin(angle) * outer;
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-    line.setAttribute('class', isMajor ? 'tick-major' : 'tick-minor');
-    ticks.appendChild(line);
+/* ─── BUILD ANALOG FACE ─── */
+(function() {
+  var tg = document.getElementById('ticks');
+  var ng = document.getElementById('hnums');
+  var cx=100, cy=100, r=88;
+  for (var i=0; i<60; i++) {
+    var isMaj = (i%5===0);
+    var ang = (i*6-90)*Math.PI/180;
+    var outer = r;
+    var inner = isMaj ? r-11 : r-5;
+    var ln = document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1', cx+Math.cos(ang)*inner);
+    ln.setAttribute('y1', cy+Math.sin(ang)*inner);
+    ln.setAttribute('x2', cx+Math.cos(ang)*outer);
+    ln.setAttribute('y2', cy+Math.sin(ang)*outer);
+    ln.setAttribute('class', isMaj?'tick-maj':'tick-min');
+    tg.appendChild(ln);
   }
-
-  for (let n = 1; n <= 12; n++) {
-    const angle = (n * 30 - 90) * Math.PI / 180;
-    const nr = r - 26;
-    const x = cx + Math.cos(angle) * nr;
-    const y = cy + Math.sin(angle) * nr;
-    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-    text.setAttribute('x', x); text.setAttribute('y', y);
-    text.setAttribute('class','hour-num');
-    text.textContent = n;
-    nums.appendChild(text);
+  for (var n=1; n<=12; n++) {
+    var a = (n*30-90)*Math.PI/180;
+    var nr = r-22;
+    var tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+    tx.setAttribute('x', cx+Math.cos(a)*nr);
+    tx.setAttribute('y', cy+Math.sin(a)*nr);
+    tx.setAttribute('class','h-num');
+    tx.textContent = n;
+    ng.appendChild(tx);
   }
 })();
 
-/* ── CLOCK UPDATER ── */
-function updateClock() {
-  const now = new Date();
-  const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+/* ─── BUILD CALENDAR ─── */
+(function() {
+  var now = new Date();
+  var yr  = now.getFullYear();
+  var mo  = now.getMonth();
+  var tod = now.getDate();
+  var MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+  var SHORT  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('calMon').textContent = SHORT[mo];
 
-  // Digital
-  document.getElementById('dHour').textContent = h % 12 || 12;
-  document.getElementById('dMin').textContent  = String(m).padStart(2,'0');
-  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const monNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('digitalDate').textContent =
-    `${dayNames[now.getDay()]}, ${monNames[now.getMonth()]} ${now.getDate()}`;
+  var firstDay = new Date(yr, mo, 1).getDay();
+  var total    = new Date(yr, mo+1, 0).getDate();
+  var grid     = document.getElementById('calGrid');
+  var days     = ['S','M','T','W','T','F','S'];
 
-  // Analog hands
-  const secDeg  = s * 6;
-  const minDeg  = m * 6 + s * 0.1;
-  const hourDeg = (h % 12) * 30 + m * 0.5;
-
-  setHand('hourHand',   hourDeg, 42);
-  setHand('minuteHand', minDeg,  32);
-  setHand('secondHand', secDeg,  32);
-}
-
-function setHand(id, deg, len) {
-  const rad = (deg - 90) * Math.PI / 180;
-  const ex = 100 + Math.cos(rad) * len;
-  const ey = 100 + Math.sin(rad) * len;
-  // tail (second hand has tail)
-  let sx = 100, sy = 100;
-  if (id === 'secondHand') {
-    const tail = 15;
-    sx = 100 - Math.cos(rad) * tail;
-    sy = 100 - Math.sin(rad) * tail;
-  }
-  const el = document.getElementById(id);
-  el.setAttribute('x1', sx); el.setAttribute('y1', sy);
-  el.setAttribute('x2', ex); el.setAttribute('y2', ey);
-}
-
-/* ── CALENDAR BUILDER ── */
-function buildCalendar() {
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth();
-  const today = now.getDate();
-
-  const monNames = ['January','February','March','April','May','June',
-                    'July','August','September','October','November','December'];
-  document.getElementById('calMonth').textContent = monNames[month];
-
-  const grid = document.getElementById('calGrid');
-  grid.innerHTML = '';
-
-  // Headers
-  ['S','M','T','W','T','F','S'].forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'cal-hdr'; el.textContent = d;
-    grid.appendChild(el);
+  /* header row */
+  var hrow = document.createElement('div');
+  hrow.className = 'cal-row';
+  days.forEach(function(d){
+    var c = document.createElement('div');
+    c.className='cal-hdr'; c.textContent=d;
+    hrow.appendChild(c);
   });
+  grid.appendChild(hrow);
 
-  const firstDay  = new Date(year, month, 1).getDay();
-  const daysInMon = new Date(year, month + 1, 0).getDate();
+  /* day cells */
+  var cells = [];
+  for (var i=0; i<firstDay; i++) cells.push(0);
+  for (var d=1; d<=total; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(0);
 
-  for (let i = 0; i < firstDay; i++) {
-    const el = document.createElement('div'); el.className = 'cal-day';
-    grid.appendChild(el);
+  for (var r=0; r<cells.length; r+=7) {
+    var row = document.createElement('div');
+    row.className='cal-row';
+    for (var c=0; c<7; c++) {
+      var v = cells[r+c];
+      var el = document.createElement('div');
+      if (v===0) {
+        el.className='cal-day empty'; el.textContent='-';
+      } else {
+        el.className='cal-day'+(v===tod?' today':'');
+        el.textContent=v;
+      }
+      row.appendChild(el);
+    }
+    grid.appendChild(row);
   }
-  for (let d = 1; d <= daysInMon; d++) {
-    const el = document.createElement('div');
-    el.className = 'cal-day' + (d === today ? ' today' : '');
-    el.textContent = d;
-    grid.appendChild(el);
-  }
+})();
+
+/* ─── CLOCK TICK ─── */
+var DAY_S   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var MON_S   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function pad(n){ return n<10?'0'+n:String(n); }
+
+function hand(id, deg, len, tail) {
+  var r  = (deg-90)*Math.PI/180;
+  var ex = 100+Math.cos(r)*len;
+  var ey = 100+Math.sin(r)*len;
+  var sx = tail ? 100-Math.cos(r)*tail : 100;
+  var sy = tail ? 100-Math.sin(r)*tail : 100;
+  var el = document.getElementById(id);
+  el.setAttribute('x1',sx); el.setAttribute('y1',sy);
+  el.setAttribute('x2',ex); el.setAttribute('y2',ey);
 }
 
-buildCalendar();
-updateClock();
-setInterval(updateClock, 1000);
+function tick() {
+  var now = new Date();
+  var h=now.getHours(), m=now.getMinutes(), s=now.getSeconds();
+  var h12 = h%12||12;
 
-/* ── SWIPE / SCROLL HANDLING ── */
-let currentTheme = 0;
-const slider = document.getElementById('slider');
+  /* digital */
+  document.getElementById('ampm').textContent = h<12?'AM':'PM';
+  document.getElementById('dH').textContent   = h12;
+  document.getElementById('dM').textContent   = pad(m);
+  document.getElementById('dS').textContent   = pad(s);
+  document.getElementById('dDate').textContent =
+    DAY_S[now.getDay()]+', '+MON_S[now.getMonth()]+' '+now.getDate();
 
-function goTo(index) {
-  currentTheme = index;
-  slider.classList.toggle('at-bottom', index === 1);
-  document.getElementById('dot0').classList.toggle('active', index === 0);
-  document.getElementById('dot1').classList.toggle('active', index === 1);
-  // hide hint after first swipe
-  document.getElementById('swipeHint').style.opacity = '0';
+  /* analog */
+  hand('hH', h12*30 + m*0.5,  42, 0);
+  hand('hM', m*6   + s*0.1,   34, 0);
+  hand('hS', s*6,              32, 14);
+}
+tick();
+setInterval(tick, 1000);
+
+/* ─── SWIPE (touch + mouse-wheel fallback) ─── */
+var cur   = 0;
+var slider= document.getElementById('slider');
+var hint  = document.getElementById('hint');
+var tsY   = 0;
+var tsX   = 0;
+
+function goTo(idx) {
+  cur = idx;
+  slider.className = idx===1 ? 'slider down' : 'slider';
+  document.getElementById('d0').className = idx===0?'dot on':'dot';
+  document.getElementById('d1').className = idx===1?'dot on':'dot';
+  hint.style.opacity = '0';
 }
 
-// Touch
-let touchStartY = 0;
-document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
-document.addEventListener('touchend',   e => {
-  const dy = touchStartY - e.changedTouches[0].clientY;
-  if (Math.abs(dy) < 30) return;
+var swiping = false;
+
+/* passive:true — never blocks iOS scroll, lock button, or home button */
+document.addEventListener('touchstart', function(e){
+  tsY = e.touches[0].clientY;
+  tsX = e.touches[0].clientX;
+  swiping = false;
+}, {passive: true});
+
+document.addEventListener('touchmove', function(e){
+  var dy = tsY - e.touches[0].clientY;
+  var dx = tsX - e.touches[0].clientX;
+  /* only intercept clear vertical swipes, not horizontal or tiny moves */
+  if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) {
+    swiping = true;
+    /* preventDefault stops page scroll but NOT hardware buttons on iOS */
+    if (e.cancelable) e.preventDefault();
+  }
+}, {passive: false});
+
+document.addEventListener('touchend', function(e){
+  if (!swiping) return;
+  var dy = tsY - e.changedTouches[0].clientY;
+  if (Math.abs(dy) < 25) return;
   goTo(dy > 0 ? 1 : 0);
-}, {passive:true});
+  swiping = false;
+}, {passive: true});
 
-// Mouse wheel
-let wheelLock = false;
-document.addEventListener('wheel', e => {
-  if (wheelLock) return;
-  wheelLock = true;
-  goTo(e.deltaY > 0 ? 1 : 0);
-  setTimeout(() => wheelLock = false, 700);
-}, {passive:true});
+/* scroll wheel for desktop testing */
+var wLock=false;
+document.addEventListener('wheel', function(e){
+  if (wLock) return;
+  wLock=true;
+  goTo(e.deltaY>0?1:0);
+  setTimeout(function(){ wLock=false; }, 650);
+}, false);
 
-// Keyboard arrow keys
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowDown') goTo(1);
-  if (e.key === 'ArrowUp')   goTo(0);
+/* arrow keys */
+document.addEventListener('keydown', function(e){
+  if (e.keyCode===40) goTo(1);
+  if (e.keyCode===38) goTo(0);
 });
 </script>
 </body>
 </html>
-
