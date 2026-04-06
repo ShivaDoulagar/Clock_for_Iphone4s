@@ -1,626 +1,431 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Clock</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StandBy Clock</title>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Rounded:wght@700&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    :root {
-      --bg: #0a0a0a;
-      --card-top: #222222;
-      --card-bot: #161616;
-      --fg: #f0ece4;
-      --muted: #666;
-      --accent: #c8b99a;
-      --dim: #2a2a2a;
-      --divider: #0a0a0a;
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Nunito', sans-serif;
+    cursor: default;
+    user-select: none;
+  }
 
-      --font-sz: 56px;
-    }
+  /* ── SLIDE CONTAINER ── */
+  .slider {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 200%;
+    transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+  }
+  .slider.at-bottom { transform: translateY(-50%); }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      color: var(--fg);
-      -webkit-tap-highlight-color: transparent;
-      touch-action: none;
-    }
+  /* ── SHARED SCREEN ── */
+  .screen {
+    width: 100%;
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
 
-    /* ── SWIPE WRAP ── */
-    #swipe-wrap {
-      display: -webkit-box;
-      display: flex;
-      width: 200%;
-      height: 100%;
-      -webkit-transition: -webkit-transform 0.42s cubic-bezier(0.77,0,0.175,1);
-      transition: transform 0.42s cubic-bezier(0.77,0,0.175,1);
-    }
-    #swipe-wrap.show-cal {
-      -webkit-transform: translateX(-50%);
-      transform: translateX(-50%);
-    }
+  /* ─────────────────────────────────────────
+     THEME 1 — Digital / Gradient (Image 1)
+  ───────────────────────────────────────── */
+  .theme-digital {
+    background: #0a0a0a;
+  }
 
-    .page {
-      width: 50%;
-      height: 100%;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-orient: vertical;
-      flex-direction: column;
-      -webkit-box-align: center;
-      align-items: center;
-      -webkit-box-pack: center;
-      justify-content: center;
-      position: relative;
-      flex-shrink: 0;
-    }
+  .digital-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
 
-    #clock-row {
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: center;
-      align-items: center;
-      -webkit-box-pack: center;
-      justify-content: center;
-      width: 100%;
-      padding: 0 8px;
-    }
+  .digital-time {
+    font-size: clamp(96px, 22vw, 200px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -4px;
+    background: linear-gradient(135deg, #ff2d9f 0%, #bf5af2 45%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 40px rgba(191,90,242,0.4));
+    animation: pulse-glow 3s ease-in-out infinite alternate;
+  }
 
-    .flip-unit {
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-orient: vertical;
-      flex-direction: column;
-      -webkit-box-align: center;
-      align-items: center;
-      gap: 7px;
-      -webkit-box-flex: 1;
-      flex: 1;
-    }
+  @keyframes pulse-glow {
+    from { filter: drop-shadow(0 0 30px rgba(255,45,159,0.35)); }
+    to   { filter: drop-shadow(0 0 60px rgba(191,90,242,0.6)); }
+  }
 
-    .flip-card {
-      position: relative;
-      width: 100%;
-      height: 0;
-      padding-bottom: 118%;
-      border-radius: 10px;
-      -webkit-perspective: 300px;
-      perspective: 300px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.7);
-    }
+  .digital-date {
+    font-size: clamp(14px, 2.5vw, 22px);
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
 
-    /* Static background halves */
-    .card-top {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 50%;
-      overflow: hidden;
-      background: var(--card-top);
-      border-radius: 10px 10px 0 0;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: end;
-      align-items: flex-end;
-      -webkit-box-pack: center;
-      justify-content: center;
-    }
-    .card-bot {
-      position: absolute;
-      top: 50%; left: 0; right: 0;
-      height: 50%;
-      overflow: hidden;
-      background: var(--card-bot);
-      border-radius: 0 0 10px 10px;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: start;
-      align-items: flex-start;
-      -webkit-box-pack: center;
-      justify-content: center;
-    }
+  /* colon dot animation */
+  .colon {
+    display: inline-block;
+    animation: blink 1s step-start infinite;
+    margin: 0 2px;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0; }
+  }
 
-    .card-top span {
-      font-family: 'DM Mono', monospace;
-      font-weight: 500;
-      font-size: 8vw;
-      color: var(--fg);
-      line-height: 1;
-      display: block;
-      -webkit-transform: translateY(50%);
-      transform: translateY(50%);
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    .card-bot span {
-      font-family: 'DM Mono', monospace;
-      font-weight: 500;
-      font-size: 8vw;
-      color: var(--fg);
-      line-height: 1;
-      display: block;
-      -webkit-transform: translateY(-50%);
-      transform: translateY(-50%);
-      -webkit-user-select: none;
-      user-select: none;
-    }
+  /* ─────────────────────────────────────────
+     THEME 2 — Analog + Calendar (Image 2)
+  ───────────────────────────────────────── */
+  .theme-analog {
+    background: #000;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: clamp(16px, 3vw, 40px);
+    gap: clamp(16px, 3vw, 40px);
+  }
 
-    /* Sheen */
-    .card-top::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: -webkit-linear-gradient(top, rgba(255,255,255,0.06), transparent);
-      background: linear-gradient(to bottom, rgba(255,255,255,0.06), transparent);
-      pointer-events: none;
-    }
-    .card-bot::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: -webkit-linear-gradient(bottom, rgba(0,0,0,0.4), transparent);
-      background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
-      pointer-events: none;
-    }
+  /* ── CLOCK FACE ── */
+  .clock-face {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-    /* Divider line */
-    .card-divider {
-      position: absolute;
-      top: calc(50% - 1px);
-      left: 0; right: 0;
-      height: 2px;
-      background: var(--divider);
-      z-index: 20;
-    }
+  svg.analog-svg {
+    width: min(42vw, 42vh, 380px);
+    height: min(42vw, 42vh, 380px);
+    overflow: visible;
+  }
 
-    /* Animated flap */
-    .flap {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 50%;
-      overflow: hidden;
-      background: var(--card-top);
-      border-radius: 10px 10px 0 0;
-      -webkit-transform-origin: bottom center;
-      transform-origin: bottom center;
-      -webkit-transform-style: preserve-3d;
-      transform-style: preserve-3d;
-      z-index: 10;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: end;
-      align-items: flex-end;
-      -webkit-box-pack: center;
-      justify-content: center;
-    }
-    .flap span {
-      font-family: 'DM Mono', monospace;
-      font-weight: 500;
-      font-size: 8vw;
-      color: var(--fg);
-      line-height: 1;
-      display: block;
-      -webkit-transform: translateY(50%);
-      transform: translateY(50%);
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    .flap::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: -webkit-linear-gradient(top, rgba(255,255,255,0.06), transparent);
-      background: linear-gradient(to bottom, rgba(255,255,255,0.06), transparent);
-      pointer-events: none;
-    }
+  .tick-major { stroke: rgba(255,255,255,0.55); stroke-width: 3; stroke-linecap: round; }
+  .tick-minor { stroke: rgba(255,255,255,0.22); stroke-width: 1.5; stroke-linecap: round; }
+  .hour-num   { fill: #fff; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 22px; text-anchor: middle; dominant-baseline: central; }
 
-    .flap.animate {
-      -webkit-animation: flapDown 0.32s ease-in forwards;
-      animation: flapDown 0.32s ease-in forwards;
-    }
-    @-webkit-keyframes flapDown {
-      0%   { -webkit-transform: rotateX(0deg); }
-      100% { -webkit-transform: rotateX(-90deg); }
-    }
-    @keyframes flapDown {
-      0%   { transform: rotateX(0deg); }
-      100% { transform: rotateX(-90deg); }
-    }
+  .hand-hour   { stroke: #fff; stroke-width: 9;  stroke-linecap: round; }
+  .hand-minute { stroke: #fff; stroke-width: 6;  stroke-linecap: round; }
+  .hand-second { stroke: #ff9f0a; stroke-width: 3; stroke-linecap: round; }
+  .center-dot  { fill: #ff9f0a; }
+  .center-dot-inner { fill: #1c1c1e; }
 
-    .flip-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
+  /* ── CALENDAR ── */
+  .calendar-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
 
-    .colon-sep {
-      font-family: 'DM Mono', monospace;
-      font-size: 7vw;
-      font-weight: 300;
-      color: var(--accent);
-      margin-bottom: 18px;
-      opacity: 0.8;
-      flex-shrink: 0;
-      padding: 0 2px;
-      -webkit-animation: blink 1s step-start infinite;
-      animation: blink 1s step-start infinite;
-    }
-    @-webkit-keyframes blink { 0%,100%{opacity:0.8} 50%{opacity:0.1} }
-    @keyframes blink         { 0%,100%{opacity:0.8} 50%{opacity:0.1} }
+  .cal-month {
+    font-size: clamp(18px, 3vw, 30px);
+    font-weight: 800;
+    color: #ff3b30;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
 
-    #date-row {
-      margin-top: 22px;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-orient: vertical;
-      flex-direction: column;
-      -webkit-box-align: center;
-      align-items: center;
-      gap: 5px;
-    }
-    #date-display {
-      font-family: 'DM Serif Display', serif;
-      font-style: italic;
-      font-size: 30px;
-      color: var(--muted);
-      letter-spacing: 0.02em;
-    }
-    #day-display {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--dim);
-    }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: clamp(4px, 1vw, 10px) clamp(2px, 0.5vw, 6px);
+    text-align: center;
+  }
 
-    #progress-bar {
-      position: absolute;
-      bottom: 0; left: 0;
-      height: 2px;
-      background: var(--accent);
-      opacity: 0.3;
-      width: 0%;
-      -webkit-transition: width 0.95s linear;
-      transition: width 0.95s linear;
-    }
+  .cal-hdr {
+    font-size: clamp(10px, 1.8vw, 16px);
+    font-weight: 800;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1px;
+  }
 
-    /* hints */
-    .swipe-hint, .back-hint {
-      position: absolute;
-      bottom: 18px;
-      font-size: 9px;
-      color: var(--dim);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: center;
-      align-items: center;
-      gap: 5px;
-      font-family: 'DM Mono', monospace;
-    }
-    .swipe-hint::after  { content:'→'; -webkit-animation:nudge-r 2.5s ease-in-out infinite; animation:nudge-r 2.5s ease-in-out infinite; display:inline-block; }
-    .back-hint::before  { content:'←'; -webkit-animation:nudge-l 2.5s ease-in-out infinite; animation:nudge-l 2.5s ease-in-out infinite; display:inline-block; }
-    @-webkit-keyframes nudge-r { 0%,100%{-webkit-transform:translateX(0)} 50%{-webkit-transform:translateX(4px)} }
-    @keyframes nudge-r          { 0%,100%{transform:translateX(0)}          50%{transform:translateX(4px)} }
-    @-webkit-keyframes nudge-l { 0%,100%{-webkit-transform:translateX(0)} 50%{-webkit-transform:translateX(-4px)} }
-    @keyframes nudge-l          { 0%,100%{transform:translateX(0)}          50%{transform:translateX(-4px)} }
+  .cal-day {
+    font-size: clamp(11px, 2vw, 18px);
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    width: clamp(22px, 3.5vw, 36px);
+    height: clamp(22px, 3.5vw, 36px);
+    line-height: clamp(22px, 3.5vw, 36px);
+    border-radius: 50%;
+    margin: 0 auto;
+    transition: color 0.3s;
+  }
 
-    /* ══════════════════════════════
-       CALENDAR
-    ══════════════════════════════ */
-    #cal-page {
-      -webkit-box-pack: start;
-      justify-content: flex-start;
-      padding: 40px 16px 0;
-      width: 50%;
-    }
+  .cal-day.today {
+    background: #ff3b30;
+    color: #fff;
+  }
 
-    #cal-header {
-      width: 100%;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: center;
-      align-items: center;
-      -webkit-box-pack: justify;
-      justify-content: space-between;
-      margin-bottom: 18px;
-    }
-    #cal-month-label {
-      font-family: 'DM Serif Display', serif;
-      font-style: italic;
-      font-size: 22px;
-      color: var(--fg);
-    }
-    .cal-nav {
-      background: none;
-      border: 1px solid var(--dim);
-      color: var(--muted);
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      font-size: 16px;
-      cursor: pointer;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: center;
-      align-items: center;
-      -webkit-box-pack: center;
-      justify-content: center;
-      -webkit-appearance: none;
-    }
-    .cal-nav:active { border-color: var(--accent); color: var(--accent); }
+  /* ── SWIPE HINT ── */
+  .swipe-hint {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.45;
+    animation: bounce 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 99;
+  }
+  .swipe-hint span {
+    font-size: 11px;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .swipe-hint svg { fill: #fff; }
+  @keyframes bounce {
+    0%,100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-6px); }
+  }
 
-    .cal-weekdays {
-      display: -webkit-box;
-      display: -ms-flexbox;
-      display: flex;
-      width: 100%;
-      margin-bottom: 6px;
-    }
-    .cal-wd {
-      -webkit-box-flex: 1;
-      flex: 1;
-      text-align: center;
-      font-size: 8px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--dim);
-      padding: 3px 0;
-      font-family: 'DM Mono', monospace;
-    }
-
-    /* Use flex rows instead of grid for old Safari */
-    #cal-days {
-      width: 100%;
-    }
-    .cal-row {
-      display: -webkit-box;
-      display: -ms-flexbox;
-      display: flex;
-      width: 100%;
-    }
-    .cal-day {
-      -webkit-box-flex: 1;
-      flex: 1;
-      aspect-ratio: 1;
-      height: 38px;
-      display: -webkit-box;
-      display: flex;
-      -webkit-box-align: center;
-      align-items: center;
-      -webkit-box-pack: center;
-      justify-content: center;
-      font-size: 12px;
-      color: var(--muted);
-      border-radius: 50%;
-      font-family: 'DM Mono', monospace;
-      font-weight: 300;
-    }
-    .cal-day.other-month   { opacity: 0.22; }
-    .cal-day.current-month { color: var(--fg); opacity: 0.75; }
-    .cal-day.today         { background: var(--accent); color: var(--bg); opacity: 1; font-weight: 500; }
-
-    body { -webkit-animation: fadeIn 0.6s ease; animation: fadeIn 0.6s ease; }
-    @-webkit-keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes fadeIn          { from{opacity:0} to{opacity:1} }
-  </style>
+  /* theme indicator dots */
+  .dots {
+    position: fixed;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 99;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    transition: background 0.4s, transform 0.4s;
+  }
+  .dot.active { background: #fff; transform: scale(1.4); }
+</style>
 </head>
 <body>
-<div id="swipe-wrap">
 
-  <!-- ── CLOCK PAGE ── -->
-  <div class="page" id="clock-page">
-    <div id="progress-bar"></div>
+<div class="slider" id="slider">
 
-    <div id="clock-row">
-      <div class="flip-unit">
-        <div class="flip-card">
-          <div class="card-top"><span id="top-hh">00</span></div>
-          <div class="card-bot"><span id="bot-hh">00</span></div>
-          <div class="card-divider"></div>
-          <div class="flap" id="flap-hh"><span id="flap-hh-val">00</span></div>
-        </div>
-        <div class="flip-label">hour</div>
+  <!-- THEME 1: Digital -->
+  <div class="screen theme-digital">
+    <div class="digital-wrap">
+      <div class="digital-time" id="digitalTime">
+        <span id="dHour">9</span><span class="colon">:</span><span id="dMin">41</span>
       </div>
-
-      <div class="colon-sep">:</div>
-
-      <div class="flip-unit">
-        <div class="flip-card">
-          <div class="card-top"><span id="top-mm">00</span></div>
-          <div class="card-bot"><span id="bot-mm">00</span></div>
-          <div class="card-divider"></div>
-          <div class="flap" id="flap-mm"><span id="flap-mm-val">00</span></div>
-        </div>
-        <div class="flip-label">min</div>
-      </div>
-
-      <div class="colon-sep">:</div>
-
-      <div class="flip-unit">
-        <div class="flip-card">
-          <div class="card-top"><span id="top-ss">00</span></div>
-          <div class="card-bot"><span id="bot-ss">00</span></div>
-          <div class="card-divider"></div>
-          <div class="flap" id="flap-ss"><span id="flap-ss-val">00</span></div>
-        </div>
-        <div class="flip-label">sec</div>
-      </div>
+      <div class="digital-date" id="digitalDate">Monday, April 6</div>
     </div>
-
-    <div id="date-row">
-      <div id="date-display"></div>
-      <div id="day-display"></div>
-    </div>
-
-    <div class="swipe-hint">calendar</div>
   </div>
 
-  <!-- ── CALENDAR PAGE ── -->
-  <div class="page" id="cal-page">
-    <div id="cal-header">
-      <button class="cal-nav" id="prev-month">&#8249;</button>
-      <div id="cal-month-label"></div>
-      <button class="cal-nav" id="next-month">&#8250;</button>
-    </div>
-    <div style="width:100%">
-      <div class="cal-weekdays">
-        <div class="cal-wd">Su</div><div class="cal-wd">Mo</div>
-        <div class="cal-wd">Tu</div><div class="cal-wd">We</div>
-        <div class="cal-wd">Th</div><div class="cal-wd">Fr</div>
-        <div class="cal-wd">Sa</div>
-      </div>
-      <div id="cal-days"></div>
-    </div>
-    <div class="back-hint">clock</div>
-  </div>
+  <!-- THEME 2: Analog + Calendar -->
+  <div class="screen theme-analog">
 
+    <!-- Analog Clock -->
+    <div class="clock-face">
+      <svg class="analog-svg" viewBox="0 0 200 200" id="analogSvg">
+        <!-- tick marks -->
+        <g id="ticks"></g>
+        <!-- hour numbers -->
+        <g id="nums"></g>
+        <!-- hands -->
+        <line id="hourHand"   class="hand-hour"   x1="100" y1="100" x2="100" y2="55"/>
+        <line id="minuteHand" class="hand-minute" x1="100" y1="100" x2="100" y2="38"/>
+        <line id="secondHand" class="hand-second" x1="100" y1="115" x2="100" y2="35"/>
+        <!-- center -->
+        <circle class="center-dot"       cx="100" cy="100" r="6"/>
+        <circle class="center-dot-inner" cx="100" cy="100" r="3"/>
+      </svg>
+    </div>
+
+    <!-- Calendar -->
+    <div class="calendar-wrap">
+      <div class="cal-month" id="calMonth">June</div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Swipe hint -->
+<div class="swipe-hint" id="swipeHint">
+  <svg width="16" height="10" viewBox="0 0 16 10"><path d="M8 10L0 0h16z"/></svg>
+  <span>Swipe</span>
+</div>
+
+<!-- Theme dots -->
+<div class="dots">
+  <div class="dot active" id="dot0"></div>
+  <div class="dot"        id="dot1"></div>
 </div>
 
 <script>
-  function pad(n) { return ('0' + n).slice(-2); }
+/* ── BUILD ANALOG TICKS & NUMBERS ── */
+(function buildFace() {
+  const ticks = document.getElementById('ticks');
+  const nums  = document.getElementById('nums');
+  const cx = 100, cy = 100, r = 90;
 
-  var MONTHS = ['January','February','March','April','May','June',
-                'July','August','September','October','November','December'];
-  var DAYS   = ['Sunday','Monday','Tuesday','Wednesday',
-                'Thursday','Friday','Saturday'];
-
-  /* ── Flip Card ── */
-  function Card(id) {
-    this.topEl   = document.getElementById('top-' + id);
-    this.botEl   = document.getElementById('bot-' + id);
-    this.flapEl  = document.getElementById('flap-' + id);
-    this.flapVal = document.getElementById('flap-' + id + '-val');
-    this.current = null;
-  }
-  Card.prototype.set = function(val) {
-    if (this.current === val) return;
-    var prev = this.current !== null ? this.current : val;
-    this.current = val;
-    this.botEl.textContent = val;
-    this.flapVal.textContent = prev;
-    this.flapEl.className = 'flap';
-    var el = this.flapEl;
-    var topEl = this.topEl;
-    var flapVal = this.flapVal;
-    // force reflow
-    void el.offsetWidth;
-    el.className = 'flap animate';
-    setTimeout(function() {
-      topEl.textContent = val;
-      flapVal.textContent = val;
-      el.className = 'flap';
-    }, 340);
-  };
-
-  var cards = {
-    hh: new Card('hh'),
-    mm: new Card('mm'),
-    ss: new Card('ss')
-  };
-
-  /* ── Tick ── */
-  function tick() {
-    var now = new Date();
-    var h = now.getHours() % 12 || 12;
-    cards.hh.set(pad(h));
-    cards.mm.set(pad(now.getMinutes()));
-    cards.ss.set(pad(now.getSeconds()));
-    document.getElementById('date-display').textContent =
-      MONTHS[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
-    document.getElementById('day-display').textContent = DAYS[now.getDay()];
-    document.getElementById('progress-bar').style.width =
-      ((now.getSeconds() / 59) * 100) + '%';
-  }
-  tick();
-  setInterval(tick, 1000);
-
-  /* ── Calendar ── */
-  var calYear, calMonth;
-  function initCal() {
-    var n = new Date();
-    calYear = n.getFullYear();
-    calMonth = n.getMonth();
-    renderCal();
-  }
-  function renderCal() {
-    var now = new Date();
-    document.getElementById('cal-month-label').textContent =
-      MONTHS[calMonth] + ' ' + calYear;
-    var firstDay    = new Date(calYear, calMonth, 1).getDay();
-    var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    var daysInPrev  = new Date(calYear, calMonth, 0).getDate();
-
-    // Build flat array of day cells
-    var cells = [];
-    for (var i = firstDay - 1; i >= 0; i--) {
-      cells.push({ label: daysInPrev - i, cls: 'cal-day other-month' });
-    }
-    for (var i = 1; i <= daysInMonth; i++) {
-      var isToday = i === now.getDate() &&
-        calMonth === now.getMonth() && calYear === now.getFullYear();
-      cells.push({ label: i, cls: 'cal-day current-month' + (isToday ? ' today' : '') });
-    }
-    var rem = cells.length % 7;
-    if (rem) {
-      for (var i = 1; i <= 7 - rem; i++) {
-        cells.push({ label: i, cls: 'cal-day other-month' });
-      }
-    }
-
-    // Render as flex rows of 7
-    var container = document.getElementById('cal-days');
-    container.innerHTML = '';
-    for (var r = 0; r < cells.length; r += 7) {
-      var row = document.createElement('div');
-      row.className = 'cal-row';
-      for (var c = r; c < r + 7 && c < cells.length; c++) {
-        var cell = document.createElement('div');
-        cell.className = cells[c].cls;
-        cell.textContent = cells[c].label;
-        row.appendChild(cell);
-      }
-      container.appendChild(row);
-    }
+  for (let i = 0; i < 60; i++) {
+    const angle = (i * 6 - 90) * Math.PI / 180;
+    const isMajor = i % 5 === 0;
+    const outer = r, inner = isMajor ? r - 12 : r - 6;
+    const x1 = cx + Math.cos(angle) * inner;
+    const y1 = cy + Math.sin(angle) * inner;
+    const x2 = cx + Math.cos(angle) * outer;
+    const y2 = cy + Math.sin(angle) * outer;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('class', isMajor ? 'tick-major' : 'tick-minor');
+    ticks.appendChild(line);
   }
 
-  document.getElementById('prev-month').onclick = function() {
-    if (--calMonth < 0) { calMonth = 11; calYear--; } renderCal();
-  };
-  document.getElementById('next-month').onclick = function() {
-    if (++calMonth > 11) { calMonth = 0; calYear++; } renderCal();
-  };
-  initCal();
+  for (let n = 1; n <= 12; n++) {
+    const angle = (n * 30 - 90) * Math.PI / 180;
+    const nr = r - 26;
+    const x = cx + Math.cos(angle) * nr;
+    const y = cy + Math.sin(angle) * nr;
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', x); text.setAttribute('y', y);
+    text.setAttribute('class','hour-num');
+    text.textContent = n;
+    nums.appendChild(text);
+  }
+})();
 
-  /* ── Swipe ── */
-  var wrap = document.getElementById('swipe-wrap');
-  var sx = 0, sy = 0, onCal = false;
+/* ── CLOCK UPDATER ── */
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
 
-  document.addEventListener('touchstart', function(e) {
-    sx = e.touches[0].clientX;
-    sy = e.touches[0].clientY;
-  }, false);
+  // Digital
+  document.getElementById('dHour').textContent = h % 12 || 12;
+  document.getElementById('dMin').textContent  = String(m).padStart(2,'0');
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('digitalDate').textContent =
+    `${dayNames[now.getDay()]}, ${monNames[now.getMonth()]} ${now.getDate()}`;
 
-  document.addEventListener('touchend', function(e) {
-    var dx = e.changedTouches[0].clientX - sx;
-    var dy = e.changedTouches[0].clientY - sy;
-    if (Math.abs(dx) < Math.abs(dy) * 1.2 || Math.abs(dx) < 30) return;
-    if (!onCal && dx < 0) {
-      onCal = true;
-      wrap.className = 'show-cal';
-    } else if (onCal && dx > 0) {
-      onCal = false;
-      wrap.className = '';
-    }
-  }, false);
+  // Analog hands
+  const secDeg  = s * 6;
+  const minDeg  = m * 6 + s * 0.1;
+  const hourDeg = (h % 12) * 30 + m * 0.5;
+
+  setHand('hourHand',   hourDeg, 42);
+  setHand('minuteHand', minDeg,  32);
+  setHand('secondHand', secDeg,  32);
+}
+
+function setHand(id, deg, len) {
+  const rad = (deg - 90) * Math.PI / 180;
+  const ex = 100 + Math.cos(rad) * len;
+  const ey = 100 + Math.sin(rad) * len;
+  // tail (second hand has tail)
+  let sx = 100, sy = 100;
+  if (id === 'secondHand') {
+    const tail = 15;
+    sx = 100 - Math.cos(rad) * tail;
+    sy = 100 - Math.sin(rad) * tail;
+  }
+  const el = document.getElementById(id);
+  el.setAttribute('x1', sx); el.setAttribute('y1', sy);
+  el.setAttribute('x2', ex); el.setAttribute('y2', ey);
+}
+
+/* ── CALENDAR BUILDER ── */
+function buildCalendar() {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+
+  const monNames = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+  document.getElementById('calMonth').textContent = monNames[month];
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // Headers
+  ['S','M','T','W','T','F','S'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-hdr'; el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDay  = new Date(year, month, 1).getDay();
+  const daysInMon = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div'); el.className = 'cal-day';
+    grid.appendChild(el);
+  }
+  for (let d = 1; d <= daysInMon; d++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day' + (d === today ? ' today' : '');
+    el.textContent = d;
+    grid.appendChild(el);
+  }
+}
+
+buildCalendar();
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ── SWIPE / SCROLL HANDLING ── */
+let currentTheme = 0;
+const slider = document.getElementById('slider');
+
+function goTo(index) {
+  currentTheme = index;
+  slider.classList.toggle('at-bottom', index === 1);
+  document.getElementById('dot0').classList.toggle('active', index === 0);
+  document.getElementById('dot1').classList.toggle('active', index === 1);
+  // hide hint after first swipe
+  document.getElementById('swipeHint').style.opacity = '0';
+}
+
+// Touch
+let touchStartY = 0;
+document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
+document.addEventListener('touchend',   e => {
+  const dy = touchStartY - e.changedTouches[0].clientY;
+  if (Math.abs(dy) < 30) return;
+  goTo(dy > 0 ? 1 : 0);
+}, {passive:true});
+
+// Mouse wheel
+let wheelLock = false;
+document.addEventListener('wheel', e => {
+  if (wheelLock) return;
+  wheelLock = true;
+  goTo(e.deltaY > 0 ? 1 : 0);
+  setTimeout(() => wheelLock = false, 700);
+}, {passive:true});
+
+// Keyboard arrow keys
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') goTo(1);
+  if (e.key === 'ArrowUp')   goTo(0);
+});
 </script>
 </body>
 </html>
