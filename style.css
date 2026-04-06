@@ -1,0 +1,10 @@
+.screen {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.clock,
+.cal-panel {
+	flex-grow: 1;
+}
